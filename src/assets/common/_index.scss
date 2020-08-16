@@ -1,0 +1,42 @@
+* {
+    box-sizing: border-box;
+    font-family: var(--fontFamilyPrimay);
+}
+
+:root {
+    --fontFamilyPrimay: 'Roboto', sans-serif;
+    --fontFamilySecondary: 'Playfair Display', serif;
+    --white: #ffffff;
+    --white100: rgba(255, 255, 255, 0.1);
+    --white200: rgba(255, 255, 255, 0.3);
+    --white300: rgba(255, 255, 255, 0.4);
+    --white400: rgba(255, 255, 255, 0.7);
+    --blue500: #2f6bff;
+    --primaryActive: #214bb3;
+    --informative1: #2f6bff;
+    --secondary: #ffffff;
+    --secondaryActive: #e6e6e6;
+    --secondaryLight: #eaf0ff;
+    --secondaryLightActive: #d3d8e6;
+    --lineCard: rgba(1, 18, 34, 0.1);
+    --ink500: #22313f;
+    --ink400: rgba(1, 18, 34, 0.5);
+    --ink300: rgba(1, 18, 34, 0.3);
+    --ink200: #dbdde1;
+    --ink100: rgba(1, 18, 34, 0.05);
+    --blue100: rgba(47, 107, 255, 0.05);
+    --blue200: rgba(47, 107, 255, 0.1);
+    --green500: #00bc3c;
+    --silver: #cccccc;
+    --bgColor: #0f1533;
+    --red500: #e60a32;
+    --px32: 2rem;
+    --px28: 1.75rem;
+    --px24: 1.5rem;
+    --px20: 1.25rem;
+    --zIndexDefault: 99;
+    --heightBox: 3.5rem;
+    --pLeftRight: 15px;
+    --header: 4rem;
+    --mheader: 3rem;
+}
