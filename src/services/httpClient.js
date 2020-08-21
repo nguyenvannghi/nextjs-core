@@ -4,11 +4,9 @@ import isEmpty from 'lodash/isEmpty';
 import * as Sentry from '@sentry/browser';
 import { toast } from 'react-toastify';
 import ENV, { Config, envNameConfig } from 'configs';
-import { readCookie, ereaseAllCookies } from 'app/utils/cookieStorage';
-import LocalStorageServices from 'app/utils/localStorage';
-import { AUTH_USER, MSG } from 'app/consts';
-import history from 'app/routes/history';
-import { RouterApp } from 'app/routes/consts';
+import { readCookie, ereaseAllCookies } from 'utils/cookieStorage';
+import LocalStorageServices from 'utils/localStorage';
+import { AUTH_USER, MSG } from 'consts';
 
 const singleton = Symbol('key for first');
 const singletonEnforcer = Symbol('key for assign');
@@ -63,11 +61,11 @@ const getClient = (headers, baseURLDomain) => {
                 });
                 LocalStorageServices.removeAll();
                 ereaseAllCookies();
-                return history.push(RouterApp.rLogin);
+                //   redirect login
             }
             const { response } = responseError;
             if (response && response.status === 401 && response?.config?.url !== 'auth/login') {
-                return history.push(RouterApp.rLogin);
+                //   redirect login
             }
             return response;
         },
