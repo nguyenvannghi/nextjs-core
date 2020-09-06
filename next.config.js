@@ -21,7 +21,6 @@ module.exports = withPlugins([
         {
             optimizeImagesInDev: true,
             handleImages: ['jpeg', 'png', 'svg', 'webp', 'gif'],
-            /* config for next-optimized-images */
         },
     ],
 ]);

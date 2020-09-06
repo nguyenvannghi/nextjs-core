@@ -40,6 +40,7 @@ MyDocument.getInitialProps = async (ctx) => {
         const initialProps = await Document.getInitialProps(ctx);
         return {
             ...initialProps,
+            namespacesRequired: ['common'],
             styles: (
                 <>
                     {initialProps.styles}
