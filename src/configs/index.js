@@ -1,8 +1,8 @@
 const env = process.env.ENV;
 
 export const envNameConfig = {
-    DEVELOPMENT: 'development',
-    STAGING: 'staging',
+    DEVELOPMENT: 'dev',
+    STAGING: 'qc',
     UAT: 'uat',
     PRODUCTION: 'production',
 };
