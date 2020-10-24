@@ -8,16 +8,8 @@ export default class MyDocument extends Document {
         return (
             <Html>
                 <Head>
-                    <title>Meta Tags — Preview, Edit and Generate</title>
                     <link rel="icon" href="/vercel.svg" />
                     <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width" />
-                    <meta name="title" content="Meta Tags — Preview, Edit and Generate" />
-                    <meta name="description" content="With" />
-                    <meta name="keywords" content="Ticket" />
-                    <link
-                        href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap"
-                        rel="stylesheet"
-                    />
                 </Head>
                 <body className="full-height">
                     <Main />

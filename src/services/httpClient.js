@@ -1,45 +1,32 @@
 import axios from 'axios';
 import cookieParser from 'cookie';
 import isEmpty from 'lodash/isEmpty';
-import * as Sentry from '@sentry/browser';
 import { toast } from 'react-toastify';
 import ENV, { Config, envNameConfig } from 'configs';
+import * as authService from 'services/authService';
 import { readCookie, ereaseAllCookies } from 'utils/cookieStorage';
 import LocalStorageServices from 'utils/localStorage';
-import { AUTH_USER, MSG } from 'consts';
+import { STORAGE_COMMON_KEY, MSG } from 'consts';
+
+export const METHOD_TYPE = {
+    GET: 'get',
+    POST: 'post',
+    PUT: 'put',
+    PATCH: 'patch',
+    DELETE: 'delete',
+};
+const REQUEST_TIMEOUT = 15000;
 
 const singleton = Symbol('key for first');
 const singletonEnforcer = Symbol('key for assign');
 
-const REQUEST_TIMEOUT = 15000;
-
-export const requestTokenHeaders = () => {
-    if (!readCookie(AUTH_USER.ACCESS_TOKEN)) {
-        return null;
-    }
-    return {
-        Authorization: `Bearer ${readCookie(AUTH_USER.ACCESS_TOKEN)}`,
-    };
-};
-
-const requestHeaders = () => ({
-    'content-type': 'application/json',
-});
-
-const getClient = (headers, baseURLDomain) => {
-    const baseUrl = baseURLDomain || Config.API_SERVER;
-    const customHeaders = headers || {};
-
+const getClient = (baseURLDomain) => {
+    const baseUrl = !isEmpty(baseURLDomain) ? baseURLDomain : Config.API_SERVER;
     const options = {
         baseURL: baseUrl,
         timeout: REQUEST_TIMEOUT,
-        headers: {
-            ...requestHeaders(),
-            ...customHeaders,
-        },
     };
     const client = axios.create(options);
-
     // Add a request interceptor
     client.interceptors.request.use(
         (requestConfig) => requestConfig,
@@ -53,13 +40,15 @@ const getClient = (headers, baseURLDomain) => {
         (response) => response,
         (responseError) => {
             if (ENV === envNameConfig.PRODUCTION) {
-                Sentry.captureException(new Error(responseError));
+                // to do something
             }
             if (!responseError.response) {
                 toast.error(MSG.NETWORK_ERROR, {
                     position: 'top-right',
                 });
-                LocalStorageServices.removeAll();
+                if (typeof localStorage !== 'undefined') {
+                    LocalStorageServices.removeAll();
+                }
                 ereaseAllCookies();
                 //   redirect login
             }
@@ -74,15 +63,17 @@ const getClient = (headers, baseURLDomain) => {
     return client;
 };
 
-const HttpInstance = (headers = null, baseURLDomain = null, ssrHeaders) => {
+const HttpInstance = (headerConfigs = null, baseURLDomain = null, ssrHeaders) => {
     class ApiConfig {
         constructor(enforcer) {
             if (enforcer !== singletonEnforcer) {
                 throw new Error('Cannot construct singleton');
             }
 
-            this.client = getClient(headers, baseURLDomain);
+            this.client = getClient(baseURLDomain);
             this.srrCookies = (!isEmpty(ssrHeaders?.cookie) && cookieParser.parse(ssrHeaders?.cookie)) || null;
+            this.headerConfigs = headerConfigs;
+            this.headers = null;
         }
 
         static get instance() {
@@ -93,77 +84,119 @@ const HttpInstance = (headers = null, baseURLDomain = null, ssrHeaders) => {
 
             return this[singleton];
         }
-        // async checkToken() {
-        //     let tkType;
-        //     let isAccToken;
-        //     let isTokenType = 'Bearer';
-        //     if (this.srrCookies) {
-        //         tkType = this.srrCookies[listCookieStorageName.token_type];
-        //         isAccToken = this.srrCookies[listCookieStorageName.access_token];
-        //         isTokenType = tkType && uppercaseFirstLetter(tkType);
-        //     } else if (typeof document !== 'undefined') {
-        //         tkType = getCookie(listCookieStorageName.token_type);
-        //         isAccToken = getCookie(listCookieStorageName.access_token);
-        //         isTokenType = tkType && uppercaseFirstLetter(tkType);
-        //     }
-        //     if (isAccToken) {
-        //         this.setJwtToken(isAccToken, isTokenType);
-        //     } else {
-        //         const getRefreshToken = getCookie(listCookieStorageName.refresh_token);
-        //         if (getRefreshToken) {
-        //             // refresh token
-        //         } else {
-        //             // logout
-        //         }
-        //     }
-        //     return true;
-        // }
 
-        get(url, conf = {}) {
-            return this.client
-                .get(url, conf)
+        setJwtToken(token, type, headersConfigRequest) {
+            const typeToken = type;
+            let headersConfigBase = {
+                'content-type': 'application/json',
+                Authorization: `${typeToken} ${token}`,
+            };
+            if (this.headerConfigs) {
+                headersConfigBase = {
+                    ...headersConfigBase,
+                    ...this.headerConfigs,
+                    ...headersConfigRequest,
+                };
+            }
+            this.headers = headersConfigBase;
+        }
+
+        async checkToken(headersConfigRequest) {
+            if (this.headerConfigs?.notAuthorization) {
+                return true;
+            }
+            let accessToken;
+            let tokenType = '';
+            if (this.srrCookies) {
+                tokenType = this.srrCookies[STORAGE_COMMON_KEY.TOKEN_TYPE] || 'Bearer';
+                accessToken = this.srrCookies[STORAGE_COMMON_KEY.ACCESS_TOKEN];
+            } else if (typeof document !== 'undefined') {
+                tokenType = readCookie(STORAGE_COMMON_KEY.TOKEN_TYPE) || 'Bearer';
+                accessToken = readCookie(STORAGE_COMMON_KEY.ACCESS_TOKEN);
+            }
+            if (accessToken) {
+                this.setJwtToken(accessToken, tokenType, headersConfigRequest);
+            } else {
+                const getRefreshToken = readCookie(STORAGE_COMMON_KEY.REFRESH_TOKEN);
+                if (getRefreshToken) {
+                    // refresh token
+                } else {
+                    // logout
+                    toast.error(MSG.LOGIN_FAILED);
+                    if (typeof localStorage !== 'undefined') {
+                        authService.logout();
+                    }
+                }
+            }
+            return true;
+        }
+
+        async fetch(url, method = METHOD_TYPE.GET, params) {
+            return this.client({
+                method,
+                url,
+                data: params,
+            })
                 .then((response) => Promise.resolve(response))
                 .catch((error) => Promise.reject(error));
         }
 
-        delete(url, data, conf = {}) {
+        async get(url, params, conf = {}) {
+            await this.checkToken(conf);
+            const paramsConfig = {
+                params,
+                headers: this.headers,
+            };
             return this.client
-                .delete(url, data, conf)
+                .get(url, paramsConfig)
                 .then((response) => Promise.resolve(response))
                 .catch((error) => Promise.reject(error));
         }
 
-        head(url, conf = {}) {
+        async delete(url, data, conf = {}) {
+            await this.checkToken(conf);
             return this.client
-                .head(url, conf)
+                .delete(url, data, this.headers)
                 .then((response) => Promise.resolve(response))
                 .catch((error) => Promise.reject(error));
         }
 
-        options(url, conf = {}) {
+        async head(url, conf = {}) {
+            await this.checkToken(conf);
             return this.client
-                .options(url, conf)
+                .head(url, this.headers)
                 .then((response) => Promise.resolve(response))
                 .catch((error) => Promise.reject(error));
         }
 
-        post(url, data = {}, conf = {}) {
+        async options(url, conf = {}) {
+            await this.checkToken(conf);
             return this.client
-                .post(url, data, conf)
+                .options(url, this.headers)
                 .then((response) => Promise.resolve(response))
                 .catch((error) => Promise.reject(error));
         }
 
-        put(url, data = {}, conf = {}) {
+        async post(url, data = {}, conf = {}) {
+            await this.checkToken(conf);
             return this.client
-                .put(url, data, conf)
+                .post(url, data, this.headers)
                 .then((response) => Promise.resolve(response))
                 .catch((error) => Promise.reject(error));
         }
 
-        patch(url, data = {}, conf = {}) {
+        async put(url, data = {}, conf = {}) {
+            await this.checkToken(conf);
             return this.client
-                .patch(url, data, conf)
+                .put(url, data, this.headers)
+                .then((response) => Promise.resolve(response))
+                .catch((error) => Promise.reject(error));
+        }
+
+        async patch(url, data = {}, conf = {}) {
+            await this.checkToken(conf);
+            return this.client
+                .patch(url, data, this.headers)
                 .then((response) => Promise.resolve(response))
                 .catch((error) => Promise.reject(error));
         }

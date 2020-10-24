@@ -1,12 +1,13 @@
 import React from 'react';
-import Head from 'next/head';
-import { i18n, useTranslation, withTranslation } from 'utils/i18n';
+import { NextSeo } from 'next-seo';
+import { i18n, useTranslation, withTranslation } from 'configs/i18n';
+import { getLayout } from 'components/layout/default';
 
 const Home = () => {
     const { t } = useTranslation();
     return (
         <>
-            <Head>Home</Head>
+            <NextSeo title="Title" description="Description" />
             <div style={{ marginTop: 100, textAlign: 'center' }}>
                 <span>{t('home')}</span>
                 <button type="button" onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'vi' : 'en')}>
@@ -24,5 +25,6 @@ export async function getServerSideProps() {
 }
 
 Home.propTypes = {};
+Home.getLayout = getLayout;
 
 export default withTranslation('common')(Home);

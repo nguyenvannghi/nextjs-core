@@ -18,6 +18,19 @@ export const AUTH_USER = {
     CURRENT_USER: 'currentUser',
 };
 
+export const USER_ROLE = {
+    ADMIN: 'ADMIN',
+    STUDENT: 'STUDENT',
+};
+
+export const STORAGE_COMMON_KEY = {
+    ACCESS_TOKEN: 'ACCESS_TOKEN',
+    REFRESH_TOKEN: 'REFRESH_TOKEN',
+    TOKEN_TYPE: 'TOKEN_TYPE',
+    RETURN_URL: 'RETURN_URL',
+    CURRENT_USER: 'CURRENT_USER',
+};
+
 export const MSG = {
     LOADING: 'Đang tải...',
     NETWORK_ERROR: 'Đã có lỗi xảy ra. Vui lòng thử lại',
